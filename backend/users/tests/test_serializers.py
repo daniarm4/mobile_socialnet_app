@@ -22,6 +22,7 @@ class UserSerializerTestCase(TestCase):
             'avatar': '/media/avatars/default.png',
             'phonenumber': '+17538231242',
             'location': 'UK',
-            'birth_date': None
+            'birth_date': None,
+            'friends': []
         }
         self.assertEqual(expected_data, serializer_data)
