@@ -1,21 +1,108 @@
+from io import BytesIO
+import json
+from datetime import date
+
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.contrib.auth import get_user_model
+from PIL import Image
 from rest_framework import status
 from rest_framework.test import APITestCase
+
+from users.serializers import UserSerializer
 
 User = get_user_model()
 
 
 class UserAPITestCase(APITestCase):
     def setUp(self):
-        User.objects.create_superuser(
+        self.admin = User.objects.create_superuser(
             username='admin',
             password='admin',
+            phonenumber='+11582374235',
         )
+        self.user = User.objects.create_user(
+            username='new_user',
+            password='new_user',
+            phonenumber='+11582374234'
+        )
+        self.client.force_authenticate(user=self.admin)
+        
+    def get_image(self):
+        bts = BytesIO()
+        img = Image.new("RGB", (100, 100))
+        img.save(bts, 'jpeg')
+        return SimpleUploadedFile("test.jpg", bts.getvalue())
 
     def test_list_endpoint(self):
-        self.client.login(username='admin', password='admin')
-        response = self.client.get(reverse('users-list'))
+        url = reverse('users:list-create')
+        response = self.client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.client.logout()
-        
+        users = User.objects.prefetch_related('friends').all()
+        serializer_data = UserSerializer(users, many=True).data
+        self.assertEqual(serializer_data, response.data)
+
+    def test_get_me_endpoint(self):
+        url = reverse('users:me')
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        serializer_data = UserSerializer(self.admin).data
+        self.assertEqual(serializer_data, response.data)
+
+    def test_create_enpoint(self):
+        user_data = {
+            'username': 'test_user',
+            'phonenumber': '+79573483275',
+            'email': 'test_user@example.com',
+            'password1': 'Test12345678',
+            'password2': 'Test12345678'
+        }
+        url = reverse('users:list-create')
+        json_user_data = json.dumps(user_data)
+        response = self.client.post(url, data=json_user_data, content_type='application/json')
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+        created_user = User.objects.get(username='test_user')
+        expected_data = {
+            'username': created_user.username,
+            'phonenumber': created_user.phonenumber,
+            'email': created_user.email
+        }
+        self.assertEqual(expected_data, response.data)
+
+    def test_update_endpoint(self):
+        avatar = self.get_image()
+        url = reverse('users:detail', kwargs={'pk': self.user.pk})
+        user_data = {
+            'avatar': avatar,
+            'birth_date': '2007-11-11',
+            'location': 'Germany'
+        }
+        response = self.client.put(url, data=user_data, format='multipart')
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        updated_user = User.objects.get(pk=self.user.pk)
+        self.assertEqual(date(2007, 11, 11), updated_user.birth_date)
+        self.assertEqual('Germany', updated_user.location)
+        self.assertEqual('/media/avatars/test.jpg', updated_user.avatar.url)
+
+    def test_get_user_detail_endpoint(self):
+        url = reverse('users:detail', kwargs={'pk': self.user.pk})
+        response = self.client.get(url)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        expected_data = {
+            'username': 'new_user', 
+            'avatar': '/media/avatars/default.png', 
+            'phonenumber': '+11582374234', 
+            'email': '', 
+            'location': None, 
+            'birth_date': None, 
+            'friends': []
+        }
+        self.assertEqual(expected_data, response.data)
+
+    def test_destroy_endpoint(self):
+        user_pk = self.user.pk
+        url = reverse('users:detail', kwargs={'pk': user_pk})
+        response = self.client.delete(url)
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+        deleted_user = User.objects.filter(pk=user_pk).first()
+        self.assertIs(None, deleted_user)
