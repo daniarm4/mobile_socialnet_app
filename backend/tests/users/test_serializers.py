@@ -1,12 +1,9 @@
-from io import BytesIO
-
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from PIL import Image
 from rest_framework.exceptions import ErrorDetail
 
 from users.serializers import UserSerializer, UserCreateSerializer, UserUpdateSerializer
+from tests.utils import get_image
 
 User = get_user_model()
 
@@ -19,12 +16,6 @@ class UserSerializersTestCase(TestCase):
             phonenumber='+17538231242',
             location='UK'
         )
-
-    def get_image(self):
-        bts = BytesIO()
-        img = Image.new("RGB", (100, 100))
-        img.save(bts, 'jpeg')
-        return SimpleUploadedFile("test.jpg", bts.getvalue())
 
     def test_user_serializer(self):
         serializer_data = UserSerializer(self.user).data
@@ -68,14 +59,28 @@ class UserSerializersTestCase(TestCase):
         }
         self.assertEqual(expected_errors, serializer_user.errors)
 
-    def test_update_user_serializer(self):
-        avatar = self.get_image()
+    def test_partial_update_user_serializer(self):
+        avatar = get_image(1)
         location = 'Germany'
         new_data = {
             'location': location,
             'avatar': avatar,
         }
-        serializer_user = UserUpdateSerializer(self.user, data=new_data)        
+        serializer_user = UserUpdateSerializer(self.user, data=new_data, partial=True)        
+        serializer_user.is_valid()
+        updated_user = serializer_user.save()
+        self.assertIn(avatar.name, updated_user.avatar.url)
+        self.assertEqual(location, updated_user.location)
+
+    def test_update_user_serializer(self):
+        avatar = get_image(2)
+        location = 'Germany'
+        new_data = {
+            'location': location,
+            'avatar': avatar,
+            'birth_date': '2002-11-11'
+        }
+        serializer_user = UserUpdateSerializer(self.user, data=new_data)    
         serializer_user.is_valid()
         updated_user = serializer_user.save()
         self.assertIn(avatar.name, updated_user.avatar.url)

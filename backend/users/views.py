@@ -15,7 +15,7 @@ from rest_framework_simplejwt.views import (
 from drf_yasg.utils import swagger_auto_schema
 from django_filters.rest_framework import DjangoFilterBackend
 
-from users.permissions import IsOwnerOrIsAdmin
+from permissions import IsOwnerOrIsAdmin
 from users.serializers import (
     UserSerializer,
     UserCreateSerializer,
@@ -46,12 +46,12 @@ class UserViewSet(ModelViewSet):
         user_serializer = self.get_serializer(request.user).data
         return Response(user_serializer, status=status.HTTP_200_OK)
 
-    def get_serializer(self, *args, **kwargs):
+    def get_serializer_class(self):
         if self.action == 'create':
-            return UserCreateSerializer(*args, **kwargs)
+            return UserCreateSerializer
         if self.action in ('update', 'partial_update'):
-            return UserUpdateSerializer(*args, **kwargs)
-        return UserSerializer(*args, context={'request': self.request}, **kwargs)
+            return UserUpdateSerializer
+        return UserSerializer
 
     def get_permissions(self):
         permissions = []

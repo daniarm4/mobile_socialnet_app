@@ -8,13 +8,18 @@ from users.views import (
 
 app_name = 'users'
 
-user_list_create = UserViewSet.as_view({'get': 'list', 'post': 'create'})
+user_list_create = UserViewSet.as_view({
+    'get': 'list', 
+    'post': 'create'
+})
+
 user_detail = UserViewSet.as_view({
     'get': 'retrieve', 
     'put': 'update', 
     'patch': 'partial_update',
     'delete': 'destroy'
 })
+
 user_get_me = UserViewSet.as_view({
     'get': 'get_me',
 })

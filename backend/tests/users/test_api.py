@@ -1,40 +1,27 @@
-from io import BytesIO
 import json
 from datetime import date
 
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from PIL import Image
 from rest_framework import status
-from rest_framework.test import APITestCase
 
+from tests.api import APITestCaseWithAuth
 from users.serializers import UserSerializer
+from tests.utils import get_image
 
 User = get_user_model()
 
 
-class UserAPITestCase(APITestCase):
+class UserAPITestCase(APITestCaseWithAuth):
     def setUp(self):
-        self.admin = User.objects.create_superuser(
-            username='admin',
-            password='admin',
-            phonenumber='+11582374235',
-        )
+        super().setUp()
         self.user = User.objects.create_user(
             username='new_user',
             password='new_user',
             phonenumber='+11582374234'
         )
-        self.client.force_authenticate(user=self.admin)
         
-    def get_image(self):
-        bts = BytesIO()
-        img = Image.new("RGB", (100, 100))
-        img.save(bts, 'jpeg')
-        return SimpleUploadedFile("test.jpg", bts.getvalue())
-
-    def test_list_endpoint(self):
+    def test_get_list_endpoint(self):
         url = reverse('users:list-create')
         response = self.client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
@@ -58,8 +45,7 @@ class UserAPITestCase(APITestCase):
             'password2': 'Test12345678'
         }
         url = reverse('users:list-create')
-        json_user_data = json.dumps(user_data)
-        response = self.client.post(url, data=json_user_data, content_type='application/json')
+        response = self.client.post(url, data=user_data)
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
         created_user = User.objects.get(username='test_user')
         expected_data = {
@@ -70,7 +56,7 @@ class UserAPITestCase(APITestCase):
         self.assertEqual(expected_data, response.data)
 
     def test_update_endpoint(self):
-        avatar = self.get_image()
+        avatar = get_image(3)
         url = reverse('users:detail', kwargs={'pk': self.user.pk})
         user_data = {
             'avatar': avatar,
@@ -82,9 +68,19 @@ class UserAPITestCase(APITestCase):
         updated_user = User.objects.get(pk=self.user.pk)
         self.assertEqual(date(2007, 11, 11), updated_user.birth_date)
         self.assertEqual('Germany', updated_user.location)
-        self.assertEqual('/media/avatars/test.jpg', updated_user.avatar.url)
+        self.assertEqual('/media/avatars/test_image3.jpg', updated_user.avatar.url)
 
-    def test_get_user_detail_endpoint(self):
+    def test_partial_update_endpoint(self):
+        url = reverse('users:detail', kwargs={'pk': self.user.pk})
+        user_data = {
+            'location': 'Poland'
+        }
+        response = self.client.patch(url, data=user_data)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        updated_user = User.objects.get(pk=self.user.pk)
+        self.assertEqual('Poland', updated_user.location)
+
+    def test_get_detail_endpoint(self):
         url = reverse('users:detail', kwargs={'pk': self.user.pk})
         response = self.client.get(url)
         self.assertEqual(status.HTTP_200_OK, response.status_code)
@@ -104,5 +100,9 @@ class UserAPITestCase(APITestCase):
         url = reverse('users:detail', kwargs={'pk': user_pk})
         response = self.client.delete(url)
         self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
-        deleted_user = User.objects.filter(pk=user_pk).first()
+        try: 
+            deleted_user = User.objects.get(pk=user_pk)
+        except User.DoesNotExist:
+            deleted_user = None
+            
         self.assertIs(None, deleted_user)

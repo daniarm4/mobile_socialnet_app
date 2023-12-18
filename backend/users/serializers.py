@@ -39,20 +39,13 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
-    avatar = serializers.ImageField(write_only=True, required=False)
-    birth_date = serializers.DateField(write_only=True, required=False)
-    location = serializers.CharField(max_length=155, write_only=True, required=False)
+    avatar = serializers.ImageField(write_only=True)
+    birth_date = serializers.DateField(write_only=True)
+    location = serializers.CharField(max_length=155, write_only=True)
 
     class Meta:
         model = User 
         fields = ['avatar', 'birth_date', 'location']
-
-    def update(self, instance, validated_data):
-        for key, value in validated_data.items(): 
-            if value is not None:
-                setattr(instance, key, value)
-        instance.save() 
-        return instance
 
 
 class TokenObtainPairResponseSerializer(serializers.Serializer):
