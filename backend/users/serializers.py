@@ -28,7 +28,8 @@ class UserCreateSerializer(serializers.ModelSerializer):
             username=validated_data['username'],
             phonenumber=validated_data['phonenumber'],
             email=validated_data['email'],
-            password=validated_data['password1']
+            password=validated_data['password1'],
+            is_active=False
         )
         return user 
 

@@ -20,14 +20,19 @@ user_detail = UserViewSet.as_view({
     'delete': 'destroy'
 })
 
-user_get_me = UserViewSet.as_view({
+get_me = UserViewSet.as_view({
     'get': 'get_me',
+})
+
+confirm_register = UserViewSet.as_view({
+    'get': 'confirm_register',
 })
 
 urlpatterns = [
     path('', user_list_create, name='list-create'),
     path('<int:pk>/', user_detail, name='detail'),
-    path('me/', user_get_me, name='me'),
+    path('me/', get_me, name='me'),
+    path('confirm/<slug:token>/', confirm_register, name='confirm-register'),
     path('token/', DecoratedTokenObtainPairView.as_view(), name='tokens'),
     path('token/refresh/', DecoratedTokenRefreshView.as_view(), name='refresh'),
     path('token/blacklist/', DecoratedTokenBlacklistView.as_view(), name='blacklist'),

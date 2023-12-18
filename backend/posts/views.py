@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Prefetch, Count, Value, OuterRef, Exists
+from django.db.models import Prefetch, Count, OuterRef, Exists
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 
@@ -58,8 +58,8 @@ class LikePostAPIView(APIView):
     @swagger_auto_schema(request_body=PostLikeSerializer)
     def post(self, request):
         post = get_object_or_404(Post, pk=request.data['post_id'])
-        like, liked = Like.objects.get_or_create(user=request.user, post=post)
-        if not liked:
+        like, like_created = Like.objects.get_or_create(user=request.user, post=post)
+        if not like_created:
             like.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_201_CREATED)

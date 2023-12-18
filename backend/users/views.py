@@ -1,3 +1,7 @@
+from uuid import uuid4
+
+from django.core.mail import send_mail
+from django.urls import reverse_lazy
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch
 from rest_framework.permissions import IsAuthenticated
@@ -14,6 +18,7 @@ from rest_framework_simplejwt.views import (
 )
 from drf_yasg.utils import swagger_auto_schema
 from django_filters.rest_framework import DjangoFilterBackend
+from django.core.cache import cache
 
 from permissions import IsOwnerOrIsAdmin
 from users.serializers import (
@@ -41,6 +46,35 @@ class UserViewSet(ModelViewSet):
             Prefetch('friends', queryset=User.objects.only('id'))
         )
     
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        token = uuid4().hex 
+        cache.set(token, {'user_pk': instance.pk}, timeout=180)
+        confirm_link = self.request.build_absolute_uri(
+            reverse_lazy('users:confirm-register', kwargs={'token': token})
+        )
+        send_mail(
+            'Register confirm',
+            f'Link: {confirm_link}',
+            None,
+            [instance.email],
+            fail_silently=False
+        )
+    
+    @action(detail=False, methods=['get'])
+    def confirm_register(self, request, token):
+        token = self.kwargs.get('token')
+        is_token_expired = not cache.ttl(token)
+        if is_token_expired:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data='Token expired')
+
+        user_data = cache.get(token)
+        user_pk = user_data.get('user_pk')
+        user = User.objects.get(pk=user_pk)
+        user.is_active = True 
+        user.save()
+        return Response(status=status.HTTP_200_OK)
+
     @action(detail=False)
     def get_me(self, request):
         user_serializer = self.get_serializer(request.user).data
