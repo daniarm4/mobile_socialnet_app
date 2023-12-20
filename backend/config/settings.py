@@ -215,3 +215,7 @@ DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER')
 if 'test' in sys.argv :
     DEFAULT_FILE_STORAGE = 'inmemorystorage.InMemoryStorage'
     PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
+
+# Celery settings 
+    
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'

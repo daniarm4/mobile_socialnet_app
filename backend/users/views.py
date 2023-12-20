@@ -1,6 +1,5 @@
 from uuid import uuid4
 
-from django.core.mail import send_mail
 from django.urls import reverse_lazy
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch
@@ -29,6 +28,7 @@ from users.serializers import (
     TokenObtainPairResponseSerializer, 
     TokenRefreshResponseSerializer
 )
+from users.tasks import send_mail_task
 
 User = get_user_model()
 
@@ -53,14 +53,13 @@ class UserViewSet(ModelViewSet):
         confirm_link = self.request.build_absolute_uri(
             reverse_lazy('users:confirm-register', kwargs={'token': token})
         )
-        send_mail(
+        send_mail_task.delay(
             'Register confirm',
             f'Link: {confirm_link}',
-            None,
             [instance.email],
-            fail_silently=False
         )
     
+    @swagger_auto_schema()
     @action(detail=False, methods=['get'])
     def confirm_register(self, request, token):
         token = self.kwargs.get('token')

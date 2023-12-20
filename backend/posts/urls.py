@@ -1,6 +1,6 @@
 from django.urls import path 
 
-from posts.views import PostViewSet, LikePostAPIView
+from posts.views import PostViewSet
 
 app_name = 'posts'
 
@@ -16,7 +16,9 @@ post_detail = PostViewSet.as_view({
     'delete': 'destroy' 
 })
 
-like_post = LikePostAPIView.as_view()
+like_post = PostViewSet.as_view({
+    'post': 'like',
+})
 
 urlpatterns = [
     path('', post_list_create, name='list-create'),
