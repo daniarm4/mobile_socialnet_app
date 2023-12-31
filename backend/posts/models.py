@@ -44,3 +44,23 @@ class Like(models.Model):
     class Meta:
         verbose_name = 'like'
         verbose_name_plural = 'likes'
+
+
+class Comments(models.Model):
+    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='comments')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
+    text = models.TextField(blank=True, null=True)
+    image = models.ImageField(upload_to='comments', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        if self.owner: 
+            return f'Owner - {self.owner}, post - {self.post}'
+        return self.text[:30]
+
+    class Meta:
+        verbose_name = 'comment'
+        verbose_name_plural = 'comments'
+        constraints = [
+            models.UniqueConstraint(fields=['owner', 'post'], name='unique_owner_post')
+        ]

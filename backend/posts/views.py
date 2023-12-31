@@ -3,13 +3,15 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
+from rest_framework.generics import ListAPIView, CreateAPIView
 from django.db.models import Prefetch, Count, OuterRef, Exists
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 from permissions import IsOwnerOrIsAdmin
-from posts.models import Post, Like, PostImages
-from posts.serializers import PostSerializer, PostCreateUpdateSerializer, PostLikeSerializer
+from posts.models import Post, Like, PostImages, Comments
+from posts.serializers import PostSerializer, PostCreateUpdateSerializer, PostLikeSerializer, CommentSerializer, CommentCreateSerializer
 from categories.models import Category
 
 
@@ -29,6 +31,7 @@ class PostViewSet(ModelViewSet):
                 )
                 .annotate(
                     total_likes=Count('likes'),
+                    total_comments=Count('comments'),
                     is_liked=is_liked_annotation
                 )
                 .only(
@@ -61,3 +64,22 @@ class PostViewSet(ModelViewSet):
             permissions = [IsOwnerOrIsAdmin]
         return [permission() for permission in permissions]
 
+
+class CommentsListAPIView(ListAPIView):
+    serializer_class = CommentSerializer
+    
+    def get_queryset(self):
+        post_id = self.kwargs.get('post_id')
+        comments = (
+            Comments.objects
+                .filter(post=post_id)
+                .select_related('owner')
+                .order_by('-created_at')
+                .only('owner__username', 'text', 'image', 'created_at')
+        )
+        return comments
+
+
+class CommentsCreateAPIView(CreateAPIView):
+    queryset = Comments.objects.all()
+    serializer_class = CommentCreateSerializer
