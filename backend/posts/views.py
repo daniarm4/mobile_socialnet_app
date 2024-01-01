@@ -7,7 +7,6 @@ from rest_framework.generics import ListAPIView, CreateAPIView
 from django.db.models import Prefetch, Count, OuterRef, Exists
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
 
 from permissions import IsOwnerOrIsAdmin
 from posts.models import Post, Like, PostImages, Comments
@@ -67,7 +66,7 @@ class PostViewSet(ModelViewSet):
 
 class CommentsListAPIView(ListAPIView):
     serializer_class = CommentSerializer
-    
+
     def get_queryset(self):
         post_id = self.kwargs.get('post_id')
         comments = (
@@ -75,7 +74,7 @@ class CommentsListAPIView(ListAPIView):
                 .filter(post=post_id)
                 .select_related('owner')
                 .order_by('-created_at')
-                .only('owner__username', 'text', 'image', 'created_at')
+                .only('owner__username', 'text', 'image', 'created_at', 'parent')
         )
         return comments
 

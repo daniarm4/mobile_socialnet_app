@@ -21,13 +21,13 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comments
-        fields = ['owner_username', 'text', 'image', 'created_at']
+        fields = ['id', 'owner_username', 'text', 'image', 'created_at', 'parent']
 
 
 class CommentCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comments 
-        fields = ['owner', 'post', 'text', 'image']
+        fields = ['owner', 'post', 'text', 'image', 'parent']
 
 
 class PostSerializer(serializers.ModelSerializer):

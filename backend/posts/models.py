@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from mptt.models import MPTTModel, TreeForeignKey
 
 from categories.models import Category
 
@@ -46,9 +47,10 @@ class Like(models.Model):
         verbose_name_plural = 'likes'
 
 
-class Comments(models.Model):
+class Comments(MPTTModel):
     owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='comments')
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
+    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
     text = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='comments', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -61,6 +63,6 @@ class Comments(models.Model):
     class Meta:
         verbose_name = 'comment'
         verbose_name_plural = 'comments'
-        constraints = [
-            models.UniqueConstraint(fields=['owner', 'post'], name='unique_owner_post')
-        ]
+
+    class MPTTMeta:
+        order_insertion_by = ['created_at'] 
