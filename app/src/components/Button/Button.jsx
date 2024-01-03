@@ -2,7 +2,7 @@ import { Text, TouchableOpacity } from 'react-native'
 import React from 'react'
 import Icon from 'react-native-vector-icons/FontAwesome'
 
-const Button = ({ onPress, title, width, margin, colorBg, borderWidth, textColor, borderColor, iconName }) => {
+const Button = ({ onPress, title, width, margin, marginBottom, colorBg, borderWidth, textColor, borderColor, iconName }) => {
   return (
     <TouchableOpacity
         onPress={onPress}
@@ -11,6 +11,7 @@ const Button = ({ onPress, title, width, margin, colorBg, borderWidth, textColor
             padding: 15,
             borderRadius: 50,
             width: width,
+            marginBottom: marginBottom,
             margin: margin,
             borderWidth: borderWidth,
             borderColor: borderColor,

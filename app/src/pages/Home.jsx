@@ -1,25 +1,24 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet } from 'react-native'
 import React from 'react'
-import Post from '../components/Posts/Post'
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import PostsList from '../components/Posts/PostsList';
+import PostDetail from '../components/Posts/PostDetail';
+
+const Stack = createNativeStackNavigator();
 
 const Home = () => {
-  return (
-    <ScrollView style={styles.container}>
-      <Post />      
-      <Post /> 
-      <Post />  
-      <Post />  
-    </ScrollView>
-  )
+    return (
+        <Stack.Navigator screenOptions={{headerShown: false}}>
+            <Stack.Screen 
+                name='list' 
+                component={PostsList}
+            />
+            <Stack.Screen 
+                name='detail' 
+                component={PostDetail} 
+            />
+        </Stack.Navigator>
+    )
 }
 
 export default Home
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'white',
-    paddingHorizontal: 15,
-    paddingTop: 10
-  }
-})

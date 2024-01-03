@@ -18,6 +18,7 @@ class PostLikeSerializer(serializers.Serializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     owner_username = serializers.CharField(source='owner.username', read_only=True)
+    image = serializers.ImageField(read_only=True)
 
     class Meta:
         model = Comments
