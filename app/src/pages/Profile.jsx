@@ -9,7 +9,7 @@ const Profile = () => {
 
     const pageContents = [
         { title: 'Friends', pageContentName: 'friends' },
-        { title: 'Edit profile', pageContentName: 'edit-profile' }
+        { title: 'Profile', pageContentName: 'edit-profile' }
     ]
 
     return (

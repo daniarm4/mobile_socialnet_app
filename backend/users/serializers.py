@@ -1,5 +1,8 @@
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
+
+from users.models import FriendRequest
 
 User = get_user_model()
 
@@ -49,30 +52,24 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         fields = ['avatar', 'birth_date', 'location']
 
 
-class TokenObtainPairResponseSerializer(serializers.Serializer):
-    access = serializers.CharField()
-    refresh = serializers.CharField()
+class FriendRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FriendRequest
+        fields = ['sender', 'receiver']
 
+
+class FriendRequestCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FriendRequest
+        fields = ['receiver']
+    
     def create(self, validated_data):
-        raise NotImplementedError()
-
-    def update(self, instance, validated_data):
-        raise NotImplementedError()
-
-
-class TokenRefreshResponseSerializer(serializers.Serializer):
-    access = serializers.CharField()
-
-    def create(self, validated_data):
-        raise NotImplementedError()
-
-    def update(self, instance, validated_data):
-        raise NotImplementedError()
+        sender = self.context['request'].user
+        receiver = validated_data['receiver']
+        friend_request = sender.send_friend_request(receiver)
+        return friend_request
 
 
-class TokenBlacklistResponseSerializer(serializers.Serializer):
-    def create(self, validated_data):
-        raise NotImplementedError()
+class AcceptFriendSerializer(serializers.Serializer):
+    friend_request_id = serializers.IntegerField()
 
-    def update(self, instance, validated_data):
-        raise NotImplementedError()

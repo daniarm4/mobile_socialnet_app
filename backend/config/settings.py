@@ -17,7 +17,11 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '192.168.1.74',
+    '192.168.43.160',
+    '127.0.0.1'
+]
 
 
 # Application definition
@@ -37,13 +41,15 @@ INSTALLED_APPS = [
     'debug_toolbar',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
-    'drf_yasg',
-    'mptt'
+    'mptt',
+    'drf_spectacular',
+    'corsheaders'
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -166,7 +172,8 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ]
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema' 
 }
 
 # JWT settings
@@ -175,22 +182,6 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=3),
 }
-
-# Swagger settings 
-
-SWAGGER_SETTINGS = {
-   'SECURITY_DEFINITIONS': {
-      'Bearer': {
-            'type': 'apiKey',
-            'name': 'Authorization',
-            'in': 'header'
-      }
-   }
-}
-
-INTERNAL_IPS = [
-    "127.0.0.1",
-]
 
 # Redis settings
 
@@ -220,3 +211,16 @@ if 'test' in sys.argv :
 # Celery settings 
     
 CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
+
+# CORS settings
+
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+# Django debug toolbar settings
+
+INTERNAL_IPS = [
+    "127.0.0.1",
+    '192.168.1.74',
+    '192.168.43.160'
+]

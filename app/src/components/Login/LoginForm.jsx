@@ -3,13 +3,15 @@ import React from 'react';
 import * as Yup from 'yup';
 import { Formik } from 'formik';
 import Button from '../Button/Button';
-
+import { useLoginMutation } from '../../store/api/userAPI';
 
 const LoginForm = () => {
+    const [ login, { isLoading } ] = useLoginMutation();
+
     const initialValues = {
         username: '',
         password: ''
-    }
+    };
 
     const validationSchema = Yup.object({
         username: Yup.string()
@@ -18,14 +20,18 @@ const LoginForm = () => {
             .max(155),
         password: Yup.string()
             .required('Enter password')
-            .min(8)
+            .min(4)
             .max(16)
     });
 
     const fields = [
         {name: 'username', placeholder: 'Username'},
         {name: 'password', placeholder: 'Password', secureTextEntry: true},
-    ]
+    ];
+
+    const onSubmitForm = values => {
+        login(values);
+    };
 
     return (
         <View style={styles.formWrapper}>
@@ -38,7 +44,7 @@ const LoginForm = () => {
                     <>
                     {fields.map(field => {
                             return (
-                                <View style={styles.inputWrapper}>
+                                <View style={styles.inputWrapper} key={field.name}>
                                     <TextInput
                                         name={field.name}
                                         placeholder={field.placeholder}

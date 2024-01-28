@@ -1,9 +1,14 @@
 from django.urls import path
+from rest_framework_simplejwt.views import (
+    TokenBlacklistView,
+    TokenObtainPairView,
+    TokenRefreshView
+)
+
 from users.views import (
-    DecoratedTokenBlacklistView, 
-    DecoratedTokenObtainPairView, 
-    DecoratedTokenRefreshView,
-    UserViewSet
+    UserViewSet,
+    FriendRequestListCreateView,
+    AcceptFriendRequestView
 )
 
 app_name = 'users'
@@ -33,7 +38,9 @@ urlpatterns = [
     path('<int:pk>/', user_detail, name='detail'),
     path('me/', get_me, name='me'),
     path('confirm/<slug:token>/', confirm_register, name='confirm-register'),
-    path('token/', DecoratedTokenObtainPairView.as_view(), name='tokens'),
-    path('token/refresh/', DecoratedTokenRefreshView.as_view(), name='refresh'),
-    path('token/blacklist/', DecoratedTokenBlacklistView.as_view(), name='blacklist'),
+    path('friend_requests/', FriendRequestListCreateView.as_view(), name='friend-requests'),
+    path('friend_requests/accept/', AcceptFriendRequestView.as_view(), name='friend-request-accept'),
+    path('token/', TokenObtainPairView.as_view(), name='tokens'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='refresh'),
+    path('token/blacklist/', TokenBlacklistView.as_view(), name='blacklist'),
 ]

@@ -2,19 +2,22 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.decorators import action
 from rest_framework.generics import ListAPIView, CreateAPIView
 from django.db.models import Prefetch, Count, OuterRef, Exists
 from django.shortcuts import get_object_or_404
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 
 from permissions import IsOwnerOrIsAdmin
 from posts.models import Post, Like, PostImages, Comments
-from posts.serializers import PostSerializer, PostCreateUpdateSerializer, PostLikeSerializer, CommentSerializer, CommentCreateSerializer
+from posts.serializers import PostSerializer, PostCreateUpdateSerializer, CommentSerializer, CommentCreateSerializer, PostLikeSerializer
 from categories.models import Category
 
 
 class PostViewSet(ModelViewSet):
+    parser_classes = [MultiPartParser, FormParser]
+
     def get_queryset(self):
         is_liked_annotation = Exists(Like.objects.filter(
             post=OuterRef('pk'),
@@ -33,16 +36,24 @@ class PostViewSet(ModelViewSet):
                     total_comments=Count('comments'),
                     is_liked=is_liked_annotation
                 )
+                .order_by(
+                    '-created_at'
+                )
                 .only(
+                    'id',
                     'text',
                     'title',
                     'created_at',
                     'owner_id',
-                    'owner__username',
+                    'owner__username'
                 )
         )
 
-    @swagger_auto_schema('post', request_body=PostLikeSerializer)
+    @extend_schema(
+        request=PostLikeSerializer,
+        responses={201: None, 204: None},
+        description='Like post via id'
+    )
     @action(detail=False, methods=['post'])
     def like(self, request):
         post = get_object_or_404(Post, pk=request.data['post_id'])
@@ -82,3 +93,4 @@ class CommentsListAPIView(ListAPIView):
 class CommentsCreateAPIView(CreateAPIView):
     queryset = Comments.objects.all()
     serializer_class = CommentCreateSerializer
+    parser_classes = [MultiPartParser]

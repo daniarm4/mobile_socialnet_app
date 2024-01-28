@@ -3,21 +3,37 @@ import React from 'react'
 import * as Yup from 'yup'
 import { Formik } from 'formik'
 import Button from '../Button/Button'
-
+import { useLogoutMutation } from '../../store/api/userAPI'
+import * as SecureStore from 'expo-secure-store';
 
 const EditProfile = () => {
+    const [logout, { isLoading } ] = useLogoutMutation();
+
     const initialValues = {
         username: ''
+    };
+
+    const handleLogout = async () => {
+        const refreshToken = await SecureStore.getItemAsync('refreshToken');
+        logout({ refresh: refreshToken });
     }
 
     const validationSchema = Yup.object({
         username: Yup.string()
             .min(3)
             .max(155)
-    })
+    });
 
     return (
         <View style={styles.container}>
+            <Button
+                onPress={handleLogout}
+                title={'Logout'}
+                colorBg={'#1673FF'}
+                width={'100%'}
+                textColor={'white'}
+                marginBottom={10}
+            />
             <Text style={styles.title}>Edit profile</Text>
             <Formik
                 initialValues={initialValues}

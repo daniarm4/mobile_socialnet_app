@@ -5,7 +5,8 @@ const Search = () => {
     const userList = [
         { id: 1, name: 'Alan Walker' },
         { id: 2, name: 'William Olwer' },
-        { id: 3, name: 'Oskar Holocoe' }
+        { id: 3, name: 'Oskar Holocoe' },
+        { id: 1, name: 'Alan Walker' }
     ]
 
     return (

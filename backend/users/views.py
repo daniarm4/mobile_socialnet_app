@@ -3,19 +3,16 @@ from uuid import uuid4
 from django.urls import reverse_lazy
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch
+from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, JSONParser
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.generics import ListCreateAPIView
+from rest_framework.views import APIView
 from rest_framework import status
-from rest_framework_simplejwt.views import (
-    TokenBlacklistView,
-    TokenObtainPairView,
-    TokenRefreshView,
-)
-from drf_yasg.utils import swagger_auto_schema
 from django_filters.rest_framework import DjangoFilterBackend
 from django.core.cache import cache
 
@@ -24,11 +21,12 @@ from users.serializers import (
     UserSerializer,
     UserCreateSerializer,
     UserUpdateSerializer,
-    TokenBlacklistResponseSerializer, 
-    TokenObtainPairResponseSerializer, 
-    TokenRefreshResponseSerializer
+    FriendRequestSerializer,
+    FriendRequestCreateSerializer,
+    AcceptFriendSerializer
 )
 from users.tasks import send_mail_task
+from users.models import FriendRequest
 
 User = get_user_model()
 
@@ -42,7 +40,7 @@ class UserViewSet(ModelViewSet):
     lookup_url_kwarg = 'pk'
 
     def get_queryset(self):
-        return User.objects.prefetch_related(
+        return User.objects.filter(is_active=True).prefetch_related(
             Prefetch('friends', queryset=User.objects.only('id'))
         )
     
@@ -59,7 +57,6 @@ class UserViewSet(ModelViewSet):
             [instance.email],
         )
     
-    @swagger_auto_schema()
     @action(detail=False, methods=['get'])
     def confirm_register(self, request, token):
         token = self.kwargs.get('token')
@@ -95,31 +92,25 @@ class UserViewSet(ModelViewSet):
         return [permission() for permission in permissions]
 
 
-class DecoratedTokenObtainPairView(TokenObtainPairView):
-    @swagger_auto_schema(
-        responses={
-            status.HTTP_200_OK: TokenObtainPairResponseSerializer,
-        }
-    )
-    def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+class FriendRequestListCreateView(ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return FriendRequest.objects.filter(receiver=user)
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return FriendRequestCreateSerializer
+        return FriendRequestSerializer
 
 
-class DecoratedTokenRefreshView(TokenRefreshView):
-    @swagger_auto_schema(
-        responses={
-            status.HTTP_200_OK: TokenRefreshResponseSerializer,
-        }
-    )
-    def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+class AcceptFriendRequestView(APIView): 
+    permission_classes = [IsAuthenticated]
+    serializer_class = AcceptFriendSerializer
 
-
-class DecoratedTokenBlacklistView(TokenBlacklistView):
-    @swagger_auto_schema(
-        responses={
-            status.HTTP_200_OK: TokenBlacklistResponseSerializer,
-        }
-    )
-    def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+    def post(self, request):
+        receiver = request.user
+        friend_request = get_object_or_404(FriendRequest, pk=request.data['friend_request_id'])
+        receiver.accept_friend_request(friend_request)
+        return Response(status=200)

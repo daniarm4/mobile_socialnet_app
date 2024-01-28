@@ -3,9 +3,17 @@ import * as Yup from 'yup';
 import React from 'react';
 import { Formik } from 'formik';
 import Button from '../Button/Button';
+import { useRegisterMutation } from '../../store/api/userAPI';
 
 const RegisterForm = () => {
+    const [ register, { data, isLoading, isError, error, isSuccess } ] = useRegisterMutation();
+
     const phoneRegExp = /^(\+?\d{0,4})?\s?-?\s?(\(?\d{3}\)?)\s?-?\s?(\(?\d{3}\)?)\s?-?\s?(\(?\d{4}\)?)?$/;
+
+    if (isError) {
+        console.log(error);
+        console.log('error');
+    }
 
     const validationSchema = Yup.object({   
         username: Yup.string()
@@ -13,7 +21,7 @@ const RegisterForm = () => {
         email: Yup.string()
             .email('Enter valid email')
             .required('Email is required'),
-        phone: Yup.string()
+        phonenumber: Yup.string()
             .matches(phoneRegExp, 'Phone number is not valid')
             .required('Phone number is required')
             .min(12, 'Phone number is too short')
@@ -32,22 +40,30 @@ const RegisterForm = () => {
     const initialValues = { 
         username: '',
         email: '',
-        phoneNumber: '',
+        phonenumber: '',
         password1: '',
         password2: ''
     };
 
     const onSubmitForm = (values) => {
-        console.log(values);
+        register(values);
     };
+
+    if (isLoading) {
+        console.log('loading')
+    }
+
+    if (isSuccess) {
+        console.log(data);
+    }
 
     const fields = [
         {name: 'email', placeholder: 'Email', keyboardType: 'email-address'},
         {name: 'username', placeholder: 'Username'},
-        {name: 'phone', placeholder: 'Phone'},
+        {name: 'phonenumber', placeholder: 'Phone'},
         {name: 'password1', placeholder: 'Password', secureTextEntry: true},
         {name: 'password2', placeholder: 'Retype password', secureTextEntry: true}
-    ]
+    ];
 
     return (
         <>
@@ -61,7 +77,7 @@ const RegisterForm = () => {
                     <>
                         {fields.map(field => {
                             return (
-                                <View style={styles.inputWrapper}>
+                                <View style={styles.inputWrapper} key={field.name}>
                                     <TextInput
                                         name={field.name}
                                         placeholder={field.placeholder}

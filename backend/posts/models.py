@@ -18,7 +18,6 @@ class Post(models.Model):
     class Meta:
         verbose_name = 'post'
         verbose_name_plural = 'posts'
-        ordering = ['-created_at']
 
     def __str__(self):
         if not self.title:

@@ -22,13 +22,18 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comments
-        fields = ['id', 'owner_username', 'text', 'image', 'created_at', 'parent']
+        fields = ['id', 'owner_username', 'text', 'image', 'created_at', 'parent', 'level']
 
 
 class CommentCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comments 
-        fields = ['owner', 'post', 'text', 'image', 'parent']
+        fields = ['post', 'text', 'image', 'parent']
+
+    def create(self, validated_data):
+        owner = self.context['request'].user 
+        comment = Comments.objects.create(owner=owner, **validated_data)
+        return comment 
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -43,6 +48,7 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post 
         fields = [
+            'id',
             'title', 
             'text', 
             'owner_username', 
@@ -56,7 +62,11 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 class PostCreateUpdateSerializer(serializers.ModelSerializer):
-    images = PostImagesSerializer(many=True)
+    images = serializers.ListField(
+        child=serializers.FileField(max_length = 1000000, allow_empty_file = False, use_url = False),
+        write_only=True,
+        required=False
+    )
 
     class Meta:
         model = Post 
@@ -67,3 +77,13 @@ class PostCreateUpdateSerializer(serializers.ModelSerializer):
             'categories',
             'images'
         ]
+
+    def create(self, validated_data):
+        images = validated_data.pop('images')
+        categories = validated_data.pop('categories')
+        owner = self.context['request'].user
+        post = Post.objects.create(owner=owner, **validated_data)
+        post.categories.set(categories)
+        for image in images:
+            PostImages.objects.create(post=post, image=image)
+        return post
