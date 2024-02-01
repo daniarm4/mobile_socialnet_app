@@ -1,13 +1,34 @@
-import { StyleSheet, Text, TextInput, View, Image, FlatList, TouchableOpacity } from 'react-native'
-import React from 'react'
+import { StyleSheet, Text, TextInput, View, Image, FlatList, TouchableOpacity, Button } from 'react-native';
+import React, { useState } from 'react';
+import { useLazySearchUserQuery, useSearchUserQuery } from '../store/api/userAPI';
 
 const Search = () => {
     const userList = [
         { id: 1, name: 'Alan Walker' },
         { id: 2, name: 'William Olwer' },
         { id: 3, name: 'Oskar Holocoe' },
-        { id: 1, name: 'Alan Walker' }
-    ]
+    ];
+
+    // const [trigger, { currentData, isFetching, isSuccess }, lastPromiseInfo] = useLazySearchUserQuery();
+
+    // if (isSuccess) {
+    //     console.log(currentData);
+    // }
+
+    const [searchInput, setSearchInput] = useState('');
+    const [searchParam, setSearchParam] = useState('');
+    const [page, setPage] = useState(1);
+    const { data, isFetching, isLoading, isError, error, isSuccess } = useSearchUserQuery({ page: page, searchParam: searchParam }, { skip: Boolean(!searchParam) });
+
+    if (isError) {
+        console.error(error);
+    }
+
+    const loadMore = () => {
+        if (!isFetching && data.next) {
+            setPage(page => page + 1);
+        }
+    };
 
     return (
         <View style={styles.container}>
@@ -22,45 +43,66 @@ const Search = () => {
                         opacity: 0.5
                     }}
                 />
-                <TextInput
-                    style={styles.input}
-                    placeholder='Search'
-                />
+                <View>
+                    <TextInput
+                        style={styles.input}
+                        placeholder='Search'
+                        value={searchInput}
+                        onChangeText={(text) => {
+                            setSearchInput(text);
+                            setPage(1);
+                        }}
+                    />
+                </View>
             </View>
-            {/* <Text style={styles.noResult}>No result</Text>  */}
-            <FlatList
-                data={userList}
-                style={styles.userList}
-                renderItem={({ item }) => {
-                    return (
-                        <View style={styles.userContainer}>
-                            <TouchableOpacity style={styles.user}>
-                                <Image
-                                    style={styles.avatar}
-                                    source={{
-                                        uri: 'https://img.freepik.com/free-vector/businessman-character-avatar-isolated_24877-60111.jpg?size=626&ext=jpg&ga=GA1.1.601401618.1686480699&semt=ais'
-                                    }}
-                                />
-                                <Text style={styles.username}>{item.name}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={{
-                                    padding: 10,
-                                    borderRadius: 20,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    backgroundColor: '#0068FF'
-                                }}
-                                onPress={() => console.log(`add friend #${item.id}`)}
-                            >
-                                <Text style={{ color: 'white', fontWeight: '500' }}>Add</Text>
-                            </TouchableOpacity>
-                        </View>
-                    )
+            <Button
+                onPress={() => {
+                    setPage(1);
+                    setSearchParam(searchInput);
                 }}
-                keyExtractor={item => item.id}
+                title='search'
             />
+            {/* <Text style={styles.noResult}>No result</Text>  */}
+            {data
+                ?
+                < FlatList
+                    data={data.results}
+                    style={styles.userList}
+                    onEndReached={loadMore}
+                    onEndReachedThreshold={0.9}
+                    renderItem={({ item }) => {
+                        return (
+                            <View style={styles.userContainer} key={item.username}>
+                                <TouchableOpacity style={styles.user}>
+                                    <Image
+                                        style={styles.avatar}
+                                        source={{
+                                            uri: item.avatar
+                                        }}
+                                    />
+                                    <Text style={styles.username}>{item.username}</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={{
+                                        padding: 10,
+                                        borderRadius: 20,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: '#0068FF'
+                                    }}
+                                    onPress={() => console.log(`add friend #${item.id}`)}
+                                >
+                                    <Text style={{ color: 'white', fontWeight: '500' }}>Add</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )
+                    }}
+                    keyExtractor={item => item.id}
+                />
+                :
+                <Text>
+                    No result</Text>}
         </View>
     )
 };

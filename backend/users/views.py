@@ -25,6 +25,7 @@ from users.serializers import (
     FriendRequestCreateSerializer,
     AcceptFriendSerializer
 )
+from users.pagination import UserPagination
 from users.tasks import send_mail_task
 from users.models import FriendRequest
 
@@ -33,8 +34,8 @@ User = get_user_model()
 
 class UserViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter]
-    filterset_fields = ['location', 'birth_date']
     search_fields = ['username']
+    pagination_class = UserPagination
     parser_classes = [MultiPartParser, JSONParser]
     lookup_field = 'pk'
     lookup_url_kwarg = 'pk'

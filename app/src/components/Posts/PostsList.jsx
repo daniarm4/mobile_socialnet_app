@@ -1,18 +1,19 @@
-import { StyleSheet, ScrollView, View, Text } from 'react-native';
-import React from 'react';
+import { StyleSheet, ScrollView, View, Text, FlatList } from 'react-native';
+import React, { useState } from 'react';
 import Post from './Post';
 import Button from '../Button/Button';
 import { useGetPostsQuery } from '../../store/api/postAPI';
 
 
 const PostsList = ({ navigation }) => {
-    const { data: posts, isLoading, isSuccess } = useGetPostsQuery();
+    const { data: posts, isLoading } = useGetPostsQuery();
+    const [ page, setPage ] = useState(1);
 
-    const navigateToAddPostForm = () => {
-        navigation.navigate('add');
-    };
+    // const navigateToAddPostForm = () => {
+    //     navigation.navigate('add');
+    // };
 
-    if (isLoading) {
+    const Loading = () => {
         return (
             <View style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ fontSize: 28, fontWeight: '500' }} >Loading...</Text>
@@ -20,20 +21,28 @@ const PostsList = ({ navigation }) => {
         )
     }
 
+    if (isLoading) {
+        return (
+            <Loading />
+        )
+    }
+
     return (
-        <ScrollView style={styles.container} contentContainerStyle={{ display: 'flex', alignItems: 'center' }}>
-            <Button 
-                width={'70%'}
-                colorBg={'#1673FF'}
-                textColor={'white'}
-                title={'Add post'}
-                marginBottom={10}
-                onPress={navigateToAddPostForm}
-            />
-            {posts.map(post => (
-                <Post key={post.id} postData={post} navigation={navigation} />
-            ))}    
-        </ScrollView>
+        <FlatList
+            style={styles.container}
+            data={posts}
+            renderItem={({ item }) => <Post key={item.id} postData={item} navigation={navigation} />}
+            onEndReached={() => {}}
+            ListFooterComponent={Loading}
+        />
+        //     <Button 
+        //         width={'70%'}
+        //         colorBg={'#1673FF'}
+        //         textColor={'white'}
+        //         title={'Add post'}
+        //         marginBottom={10}
+        //         onPress={navigateToAddPostForm}
+        //     />
     )
 }
 
@@ -44,6 +53,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: 'white',
         paddingHorizontal: 15,
-        paddingTop: 10
+        paddingTop: 10,
+        display: 'flex',
     }
 })

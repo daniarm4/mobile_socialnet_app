@@ -49,6 +49,7 @@ const PostDetail = ({ route }) => {
                     <ScrollView horizontal>
                         {post.images.map(({ image }) => (
                             <Image
+                                key={image}
                                 style={styles.image}
                                 source={{
                                     uri: image
