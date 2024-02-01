@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, View, Text, FlatList } from 'react-native';
+import { StyleSheet, View, Text, FlatList } from 'react-native';
 import React, { useState } from 'react';
 import Post from './Post';
 import Button from '../Button/Button';
@@ -6,8 +6,8 @@ import { useGetPostsQuery } from '../../store/api/postAPI';
 
 
 const PostsList = ({ navigation }) => {
-    const { data: posts, isLoading } = useGetPostsQuery();
     const [ page, setPage ] = useState(1);
+    const { data, isFetching } = useGetPostsQuery(page);
 
     // const navigateToAddPostForm = () => {
     //     navigation.navigate('add');
@@ -21,28 +21,29 @@ const PostsList = ({ navigation }) => {
         )
     }
 
-    if (isLoading) {
-        return (
-            <Loading />
-        )
+    const loadMore = () => {
+        if (!isFetching && data.next) {
+            setPage(page + 1);
+        }
     }
 
     return (
         <FlatList
             style={styles.container}
-            data={posts}
+            data={data?.results ? data.results : []}
             renderItem={({ item }) => <Post key={item.id} postData={item} navigation={navigation} />}
-            onEndReached={() => {}}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.5}
             ListFooterComponent={Loading}
         />
-        //     <Button 
-        //         width={'70%'}
-        //         colorBg={'#1673FF'}
-        //         textColor={'white'}
-        //         title={'Add post'}
-        //         marginBottom={10}
-        //         onPress={navigateToAddPostForm}
-        //     />
+            // <Button 
+            //     width={'70%'}
+            //     colorBg={'#1673FF'}
+            //     textColor={'white'}
+            //     title={'Add post'}
+            //     marginBottom={10}
+            //     onPress={navigateToAddPostForm}
+            // />
     )
 }
 

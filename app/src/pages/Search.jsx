@@ -1,24 +1,12 @@
 import { StyleSheet, Text, TextInput, View, Image, FlatList, TouchableOpacity, Button } from 'react-native';
 import React, { useState } from 'react';
-import { useLazySearchUserQuery, useSearchUserQuery } from '../store/api/userAPI';
+import { useSearchUserQuery } from '../store/api/userAPI';
 
 const Search = () => {
-    const userList = [
-        { id: 1, name: 'Alan Walker' },
-        { id: 2, name: 'William Olwer' },
-        { id: 3, name: 'Oskar Holocoe' },
-    ];
-
-    // const [trigger, { currentData, isFetching, isSuccess }, lastPromiseInfo] = useLazySearchUserQuery();
-
-    // if (isSuccess) {
-    //     console.log(currentData);
-    // }
-
     const [searchInput, setSearchInput] = useState('');
     const [searchParam, setSearchParam] = useState('');
     const [page, setPage] = useState(1);
-    const { data, isFetching, isLoading, isError, error, isSuccess } = useSearchUserQuery({ page: page, searchParam: searchParam }, { skip: Boolean(!searchParam) });
+    const { data, isFetching, isError, error } = useSearchUserQuery({ page: page, searchParam: searchParam }, { skip: Boolean(!searchParam) });
 
     if (isError) {
         console.error(error);
@@ -62,14 +50,13 @@ const Search = () => {
                 }}
                 title='search'
             />
-            {/* <Text style={styles.noResult}>No result</Text>  */}
             {data
                 ?
                 < FlatList
                     data={data.results}
                     style={styles.userList}
                     onEndReached={loadMore}
-                    onEndReachedThreshold={0.9}
+                    onEndReachedThreshold={0.3}
                     renderItem={({ item }) => {
                         return (
                             <View style={styles.userContainer} key={item.username}>

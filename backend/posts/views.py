@@ -12,11 +12,13 @@ from drf_spectacular.utils import extend_schema
 from permissions import IsOwnerOrIsAdmin
 from posts.models import Post, Like, PostImages, Comments
 from posts.serializers import PostSerializer, PostCreateUpdateSerializer, CommentSerializer, CommentCreateSerializer, PostLikeSerializer
+from posts.pagination import PostPagination
 from categories.models import Category
 
 
 class PostViewSet(ModelViewSet):
     parser_classes = [MultiPartParser, FormParser]
+    pagination_class = PostPagination
 
     def get_queryset(self):
         is_liked_annotation = Exists(Like.objects.filter(

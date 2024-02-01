@@ -17,14 +17,23 @@ const postAPI = api.injectEndpoints({
             query: () => '/categories/',
         }),
         getPosts: build.query({
-            query: () => '/posts/',
-            providesTags: (result) =>
+            query: (page) => `/posts/?page=${page}`,
+            providesTags: (result) => 
                 result
                     ? [
-                        ...result.map(({ id }) => ({ type: 'Posts', id })),
+                        ...result.results.map(({ id }) => ({ type: 'Posts', id })),
                         { type: 'Posts' },
                     ]
-                    : [{ type: 'Posts' }]
+                    : [{ type: 'Posts' }],
+            serializeQueryArgs: ({ endpointName }) => {
+                return endpointName
+            },
+            merge: (currentCacheData, responseData) => {
+                currentCacheData.results.push(...responseData.results);
+            },
+            forceRefetch({ currentArg, previousArg }) {
+                return currentArg !== previousArg
+            }
         }),
         getPost: build.query({
             query: (postId) => `/posts/${postId}`

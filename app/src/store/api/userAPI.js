@@ -72,7 +72,7 @@ const userAPI = api.injectEndpoints({
                 if (!previousArg) { 
                     return true;
                 }
-                return endpointState.data.page <= currentArg.page && endpointState.data.searchParam !== currentArg.searchParam;
+                return (endpointState.data.page <= currentArg.page && endpointState.data.searchParam === currentArg.searchParam) || endpointState.data.searchParam !== currentArg.searchParam;
             }
         })
     })
