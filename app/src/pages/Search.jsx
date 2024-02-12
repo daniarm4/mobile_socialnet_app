@@ -1,15 +1,21 @@
 import { StyleSheet, Text, TextInput, View, Image, FlatList, TouchableOpacity, Button } from 'react-native';
 import React, { useState } from 'react';
-import { useSearchUserQuery } from '../store/api/userAPI';
+import { useSearchUserQuery, useSendFriendRequestMutation } from '../store/api/userAPI';
 
 const Search = () => {
     const [searchInput, setSearchInput] = useState('');
     const [searchParam, setSearchParam] = useState('');
     const [page, setPage] = useState(1);
     const { data, isFetching, isError, error } = useSearchUserQuery({ page: page, searchParam: searchParam }, { skip: Boolean(!searchParam) });
+    const [ sendFriendRequest, { isError: isSentError, error: sentError } ] = useSendFriendRequestMutation();
+
 
     if (isError) {
         console.error(error);
+    }
+
+    if (isSentError) {
+        console.log(sentError);
     }
 
     const loadMore = () => {
@@ -76,9 +82,12 @@ const Search = () => {
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        backgroundColor: '#0068FF'
+                                        backgroundColor: item.is_current_user_friend ? '#D3D3D3' : '#0068FF'
                                     }}
-                                    onPress={() => console.log(`add friend #${item.id}`)}
+                                    disabled={item.is_current_user_friend}
+                                    onPress={() => {
+                                        sendFriendRequest({ 'receiver': item.id })
+                                    }}
                                 >
                                     <Text style={{ color: 'white', fontWeight: '500' }}>Add</Text>
                                 </TouchableOpacity>

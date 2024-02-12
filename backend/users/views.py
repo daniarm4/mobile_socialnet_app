@@ -1,9 +1,4 @@
-from uuid import uuid4
-
-from django.urls import reverse_lazy
 from django.contrib.auth import get_user_model
-from django.db.models import Prefetch
-from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, JSONParser
 from rest_framework.viewsets import ModelViewSet
@@ -15,23 +10,31 @@ from rest_framework.views import APIView
 from rest_framework import status
 from django_filters.rest_framework import DjangoFilterBackend
 from django.core.cache import cache
+from drf_spectacular.utils import extend_schema
 
 from permissions import IsOwnerOrIsAdmin
 from users.serializers import (
-    UserSerializer,
+    UserLightSerializer,
+    UserDetailSerializer,
     UserCreateSerializer,
     UserUpdateSerializer,
     FriendRequestSerializer,
-    FriendRequestCreateSerializer,
-    AcceptFriendSerializer
+)
+from users.services import (
+    get_user_friend_requests, 
+    accept_friend_request, 
+    send_friend_request, 
+    create_new_user, 
+    send_confirm_link, 
+    confirm_register_account,
+    get_users_with_annotate_is_current_user_friend
 )
 from users.pagination import UserPagination
-from users.tasks import send_mail_task
-from users.models import FriendRequest
 
 User = get_user_model()
 
 
+@extend_schema(tags=['Users'])
 class UserViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter]
     search_fields = ['username']
@@ -41,48 +44,20 @@ class UserViewSet(ModelViewSet):
     lookup_url_kwarg = 'pk'
 
     def get_queryset(self):
-        return User.objects.filter(is_active=True).prefetch_related(
-            Prefetch('friends', queryset=User.objects.only('id'))
-        )
+        queryset = User.objects.filter(is_active=True) 
+
+        if self.action == 'list':
+            queryset = get_users_with_annotate_is_current_user_friend(user=self.request.user)
+        return queryset
     
-    def perform_create(self, serializer):
-        instance = serializer.save()
-        token = uuid4().hex 
-        cache.set(token, {'user_pk': instance.pk}, timeout=180)
-        confirm_link = self.request.build_absolute_uri(
-            reverse_lazy('users:confirm-register', kwargs={'token': token})
-        )
-        send_mail_task.delay(
-            'Register confirm',
-            f'Link: {confirm_link}',
-            [instance.email],
-        )
-    
-    @action(detail=False, methods=['get'])
-    def confirm_register(self, request, token):
-        token = self.kwargs.get('token')
-        is_token_expired = not cache.ttl(token)
-        if is_token_expired:
-            return Response(status=status.HTTP_400_BAD_REQUEST, data='Token expired')
-
-        user_data = cache.get(token)
-        user_pk = user_data.get('user_pk')
-        user = User.objects.get(pk=user_pk)
-        user.is_active = True 
-        user.save()
-        return Response(status=status.HTTP_200_OK)
-
-    @action(detail=False)
-    def get_me(self, request):
-        user_serializer = self.get_serializer(request.user).data
-        return Response(user_serializer, status=status.HTTP_200_OK)
-
     def get_serializer_class(self):
         if self.action == 'create':
             return UserCreateSerializer
         if self.action in ('update', 'partial_update'):
             return UserUpdateSerializer
-        return UserSerializer
+        if self.action in ('get_friends', 'list'):
+            return UserLightSerializer
+        return UserDetailSerializer
 
     def get_permissions(self):
         permissions = []
@@ -92,26 +67,55 @@ class UserViewSet(ModelViewSet):
             permissions = [IsAuthenticated]
         return [permission() for permission in permissions]
 
+    def perform_create(self, serializer):
+        user = create_new_user(user_data=serializer.validated_data)        
+        send_confirm_link(request=self.request, user=user)
 
+    @action(detail=False, methods=['get'])
+    def confirm_register(self, request, token):
+        token = self.kwargs.get('token')
+        is_token_expired = not cache.ttl(token)
+        if is_token_expired:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data='Token expired')
+
+        confirm_register_account(token)
+        return Response(status=status.HTTP_200_OK)
+
+    @action(detail=False)
+    def get_me(self, request):
+        serializer_data = self.get_serializer(request.user).data
+        return Response(serializer_data, status=status.HTTP_200_OK)
+
+    @action(detail=False)
+    def get_friends(self, request):
+        friends = request.user.friends.all()
+        serializer_data = self.get_serializer(friends, many=True).data
+        return Response(serializer_data, status=200)
+ 
+
+@extend_schema(tags=['Friend requests'])
 class FriendRequestListCreateView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = FriendRequestSerializer
+
+    def post(self, request, *args, **kwargs):
+        data = {'sender': request.user.pk, 'receiver': request.data['receiver']}
+        serializer = FriendRequestSerializer(data=data)
+        serializer.is_valid(raise_exception=True)   
+        sender, receiver = serializer.validated_data.values()
+        send_friend_request(sender, receiver)
+        return Response(status=200)
 
     def get_queryset(self):
-        user = self.request.user
-        return FriendRequest.objects.filter(receiver=user)
-
-    def get_serializer_class(self):
-        if self.request.method == 'POST':
-            return FriendRequestCreateSerializer
-        return FriendRequestSerializer
+        return get_user_friend_requests(self.request.user)
 
 
+@extend_schema(tags=['Friend requests'])
 class AcceptFriendRequestView(APIView): 
     permission_classes = [IsAuthenticated]
-    serializer_class = AcceptFriendSerializer
+    serializer_class = FriendRequestSerializer    
 
     def post(self, request):
-        receiver = request.user
-        friend_request = get_object_or_404(FriendRequest, pk=request.data['friend_request_id'])
-        receiver.accept_friend_request(friend_request)
+        friend_request_id = request.data['id']
+        accept_friend_request(friend_request_id)
         return Response(status=200)

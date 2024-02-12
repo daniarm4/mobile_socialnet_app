@@ -33,11 +33,16 @@ confirm_register = UserViewSet.as_view({
     'get': 'confirm_register',
 })
 
+get_friends = UserViewSet.as_view({
+    'get': 'get_friends'
+})
+
 urlpatterns = [
     path('', user_list_create, name='list-create'),
     path('<int:pk>/', user_detail, name='detail'),
     path('me/', get_me, name='me'),
     path('confirm/<slug:token>/', confirm_register, name='confirm-register'),
+    path('get_friends/', get_friends, name='get-friends'),
     path('friend_requests/', FriendRequestListCreateView.as_view(), name='friend-requests'),
     path('friend_requests/accept/', AcceptFriendRequestView.as_view(), name='friend-request-accept'),
     path('token/', TokenObtainPairView.as_view(), name='tokens'),

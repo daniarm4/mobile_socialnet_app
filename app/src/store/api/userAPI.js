@@ -20,14 +20,14 @@ const userAPI = api.injectEndpoints({
                 method: 'POST',
                 body: loginData
             }),
-            async onQueryStarted(_, { queryFulfilled, dispatch } ) {
+            async onQueryStarted(_, { queryFulfilled, dispatch }) {
                 try {
                     const { data } = await queryFulfilled;
                     await SecureStore.setItemAsync('accessToken', data.access);
                     await SecureStore.setItemAsync('refreshToken', data.refresh);
                     dispatch(api.util.invalidateTags(['Auth']));
                 }
-                catch(e) {
+                catch (e) {
                     console.log(e)
                 }
             }
@@ -45,7 +45,7 @@ const userAPI = api.injectEndpoints({
                     await SecureStore.deleteItemAsync('refreshToken');
                     dispatch(api.util.invalidateTags(['Auth']));
                 }
-                catch(e) {
+                catch (e) {
                     console.log(`Error from logout mutation: ${e}`)
                 }
             }
@@ -60,7 +60,6 @@ const userAPI = api.injectEndpoints({
             },
             merge: (currentCache, newItems, { arg }) => {
                 if (currentCache?.page && currentCache.page >= arg.page && currentCache.searchParam === arg.searchParam) {
-                    console.log('skip');
                     return;
                 }
                 currentCache.results.push(...newItems.results)
@@ -68,16 +67,55 @@ const userAPI = api.injectEndpoints({
                 currentCache.page = newItems.page;
                 currentCache.searchParam = newItems.searchParam;
             },
-            forceRefetch({currentArg, previousArg, endpointState}) {
-                if (!previousArg) { 
+            forceRefetch({ currentArg, previousArg, endpointState }) {
+                if (!previousArg) {
                     return true;
                 }
                 return (endpointState.data.page <= currentArg.page && endpointState.data.searchParam === currentArg.searchParam) || endpointState.data.searchParam !== currentArg.searchParam;
             }
+        }),
+        sendFriendRequest: build.mutation({
+            query: requestData => ({
+                url: '/users/friend_requests/',
+                method: 'POST',
+                body: requestData
+            })
+        }),
+        getFriendRequests: build.query({
+            query: () => 'users/friend_requests/',
+            transformResponse: (response, meta, arg) => {
+                return response.map(item => ({
+                    requestID: item.request.id,
+                    id: item.sender.id,
+                    username: item.sender.username,
+                    avatar: item.sender.avatar
+                }))
+            }
+        }),
+        getFriends: build.query({
+            query: () => 'users/get_friends/',
+        }),
+        acceptFriendRequest: build.mutation({
+            query: (requestData) => ({
+                url: 'users/friend_requests/accept/',
+                method: 'POST',
+                body: requestData
+            })
         })
     })
 });
 
-export const { useCheckAuthQuery, useLoginMutation, useLogoutMutation, useRegisterMutation, useSearchUserQuery, useLazySearchUserQuery } = userAPI;
+export const {
+    useCheckAuthQuery,
+    useLoginMutation,
+    useLogoutMutation,
+    useRegisterMutation,
+    useSearchUserQuery,
+    useLazySearchUserQuery,
+    useSendFriendRequestMutation,
+    useGetFriendRequestsQuery,
+    useGetFriendsQuery,
+    useAcceptFriendRequestMutation
+} = userAPI;
 
 export const { endpoints: { checkAuth, login } } = userAPI;
