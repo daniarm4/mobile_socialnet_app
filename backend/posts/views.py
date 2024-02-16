@@ -1,8 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
-from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.decorators import action
 from rest_framework.generics import ListAPIView, CreateAPIView
 from django.db.models import Prefetch, Count, OuterRef, Exists
@@ -13,11 +12,12 @@ from permissions import IsOwnerOrIsAdmin
 from posts.models import Post, Like, PostImages, Comments
 from posts.serializers import PostSerializer, PostCreateUpdateSerializer, CommentSerializer, CommentCreateSerializer, PostLikeSerializer
 from posts.pagination import PostPagination
+from posts.service import like_post
 from categories.models import Category
 
 
 class PostViewSet(ModelViewSet):
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     pagination_class = PostPagination
 
     def get_queryset(self):
@@ -58,12 +58,9 @@ class PostViewSet(ModelViewSet):
     )
     @action(detail=False, methods=['post'])
     def like(self, request):
-        post = get_object_or_404(Post, pk=request.data['post_id'])
-        like, like_created = Like.objects.get_or_create(user=request.user, post=post)
-        if not like_created:
-            like.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_201_CREATED)
+        post_id = request.data.get('post_id')
+        is_liked = like_post(post_id=post_id, user=request.user)
+        return Response(status=200, data={'is_liked': is_liked})
 
     def get_serializer_class(self):
         if self.action in ('update', 'create', 'partial_update'):

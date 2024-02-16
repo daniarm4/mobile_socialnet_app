@@ -58,8 +58,52 @@ const postAPI = api.injectEndpoints({
                 }
             }),
             invalidatesTags: (result) => [{ type: 'Comments', id: result.post }]
+        }),
+        likePost: build.mutation({
+            query: (likeData) => ({
+                url: '/posts/like/',
+                method: 'POST',
+                body: likeData
+            }),
+            async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+                const postID = arg.post_id;
+                const patchResult = dispatch(
+                    api.util.updateQueryData(
+                        'getPosts', undefined, (draft) => {
+                            draft.results = draft.results.map(post => {
+                                if (post.id === postID) {
+                                    if (post.is_liked) {
+                                        post.is_liked = false;
+                                        post.total_likes -= 1;
+                                    }
+                                    else {
+                                        post.is_liked = true;
+                                        post.total_likes += 1;
+                                    }
+                                }
+                                return post; 
+                            })
+                            return draft;
+                        }
+                    )
+                )
+                try {
+                    await queryFulfilled;
+                }
+                catch {
+                    patchResult.undo();
+                }
+            }
         })
     })
 });
 
-export const { useAddPostMutation, useGetCategoriesQuery, useGetPostsQuery, useGetPostQuery, useGetPostCommentsQuery, useAddCommentMutation } = postAPI;
+export const { 
+    useAddPostMutation, 
+    useGetCategoriesQuery, 
+    useGetPostsQuery, 
+    useGetPostQuery, 
+    useGetPostCommentsQuery, 
+    useAddCommentMutation,
+    useLikePostMutation
+} = postAPI;

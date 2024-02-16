@@ -1,8 +1,20 @@
-import { StyleSheet, Image, Text, View, ScrollView, TouchableOpacity } from 'react-native'
-import React from 'react'
+import { StyleSheet, Image, Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import React from 'react';
+import { useLikePostMutation } from '../../store/api/postAPI';
 
 const Post = ({ navigation, postData }) => {
     const images = postData.images;
+    const [likePost, { isError, error, isLoading }] = useLikePostMutation();
+
+    const onLikePress = () => {
+        if (!isLoading) {
+            likePost({ post_id: postData.id });
+        }
+    }
+
+    if (isError) {
+        console.log(error);
+    }
 
     return (
         <View style={styles.container}>
@@ -38,6 +50,7 @@ const Post = ({ navigation, postData }) => {
                 <ScrollView horizontal>
                     {images.map(({ image }) => (
                         <Image
+                            key={image}
                             style={styles.image}
                             source={{
                                 uri: image
@@ -48,7 +61,7 @@ const Post = ({ navigation, postData }) => {
             </View>
 
             <View style={styles.postFooter}>
-                <View style={styles.likes}>
+                <TouchableOpacity style={styles.likes} onPress={onLikePress}>
                     <Image
                         style={{
                             width: 25,
@@ -62,7 +75,7 @@ const Post = ({ navigation, postData }) => {
                         }}
                     />
                     <Text style={styles.likesCount}>{postData.total_likes}</Text>
-                </View>
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.likes} onPress={() => navigation.navigate('detail', { postId: postData.id })}>
                     <Image
                         style={{
