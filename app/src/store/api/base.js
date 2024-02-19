@@ -3,7 +3,7 @@ import { createApi } from '@reduxjs/toolkit/query/react';
 import * as SecureStore from 'expo-secure-store';
 
 const baseQuery = fetchBaseQuery({
-    baseUrl: "http://192.168.43.160:8000/api",
+    baseUrl: "http://192.168.1.74:8000/api",
     prepareHeaders: async (headers) => {
         const accessToken = await SecureStore.getItemAsync('accessToken');
         if (accessToken) {
