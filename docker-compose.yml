@@ -3,11 +3,16 @@ services:
   
   django: 
     build: ./backend
-    command: python manage.py runserver 0.0.0.0:8000
+    command: >
+      bash -c "python manage.py migrate --no-input
+      && python manage.py collectstatic --no-input
+      && gunicorn --config gunicorn_config.py config.wsgi:application"
     volumes:
-      - ./backend:/usr/src/backend
-    ports:
-      - "8000:8000"
+      - ./backend:/backend
+      - static:/backend/static
+      - media:/backend/media
+    expose:
+      - 8000
     env_file:
       - .env
     depends_on:
@@ -22,7 +27,7 @@ services:
     links:
       - redis
     volumes:
-      - ./backend:/usr/src/backend
+      - ./backend:/backend
     depends_on:
       - django 
       - redis 
@@ -37,6 +42,18 @@ services:
   redis: 
     image: redis:alpine
 
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
+      - static:/static
+      - media:/media
+    depends_on:
+      - django
 
 volumes:
   dbdata: 
+  static:
+  media:
